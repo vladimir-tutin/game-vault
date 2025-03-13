@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Download Portal</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Add JSZip for asset downloading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+	</head>
+<body>
+    
+    <header>
+        <div class="header-actions">
+            <button id="add-game-button" class="add-game-button">
+                <i class="fas fa-plus"></i> Steam Lookup
+            </button>
+        </div>
+        <h1>Game Download Portal</h1>
+        <a href="#logout" id="logout-button" class="logout-button">
+            <i class="fas fa-sign-out-alt"></i>&nbsp;Logout
+        </a>
+    </header>
+    
+    <div class="container">
+        <!-- Home Page (Games List) -->
+        <div id="home-page">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading games...</p>
+            </div>
+            
+            <div id="error-message" class="error" style="display: none;"></div>
+            
+            <div id="games-grid" class="games-grid"></div>
+        </div>
+        
+        <!-- Game Detail Page -->
+        <div id="game-page" style="display: none;">
+            <!-- Full page background -->
+            <div id="game-hero-bg" class="game-hero-bg"></div>
+            
+            <!-- Header row with back button, game title and edit button -->
+            <div class="game-header-row">
+                <div style="display: flex; align-items: center;">
+                    <a href="#" class="back-button" id="back-button">
+                        <i class="fas fa-arrow-left"></i> Back to Games
+                    </a>
+                    <button id="edit-game-button" class="edit-game-button">
+                        <i class="fas fa-edit"></i> Edit Game
+                    </button>
+                    <button id="upload-files-button" class="upload-files-button">
+                        <i class="fas fa-upload"></i> Upload Files
+                    </button>
+                </div>
+                <div class="game-title-container">
+                    <h1 id="game-title"></h1>
+                </div>
+            </div>
+            
+            <div class="game-detail-container">
+                <!-- Media Section (Left Column) -->
+                <div class="game-media-section">
+                    <div class="game-detail">
+                        <div class="game-content">
+                            <!-- Trailer Section (will be added dynamically if available) -->
+                            <div id="trailer-section" class="trailer-section"></div>
+                            
+                            <!-- Screenshots Section -->
+                            <div id="screenshots-section" class="screenshots-section">
+                                <!-- Screenshots will be added here dynamically -->
+                            </div>
+                            
+                            <div class="game-description-full" id="game-description"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Info Section (Right Column) -->
+                <div class="game-info-section">
+                    <!-- Boxart above installation instructions -->
+                    <img id="game-boxart" class="game-boxart" src="" alt="Game Boxart">
+                    
+                    <!-- Game header moved under boxart -->
+                    <div class="game-header" id="game-header-container">
+                        <div class="game-tags" id="game-tags"></div>
+                        <div id="recommendations" class="recommendations" style="display: none;"></div>
+                        <div class="meta-info" id="game-meta"></div>
+                    </div>
+                    
+                    <!-- Download Files Section -->
+                    <div class="download-files">
+                        <div class="section-header">
+                            <h2>Download Files</h2>
+                            <a id="steam-store-link" href="#" target="_blank" class="steam-button" style="display: none;">
+                                <i class="fab fa-steam"></i> View on Steam
+                            </a>
+                        </div>
+                        <div id="files-list"></div>
+                    </div>
+                    
+                    <!-- Collapsible Instructions Section -->
+                    <div class="instructions-container">
+                        <div id="instructions-header" class="instructions-header">
+                            <h2>Installation Instructions</h2>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div id="instructions-content" class="instructions-content">
+                            <div id="game-instructions"></div>
+                        </div>
+                    </div>
+
+                    <!-- System Requirements Section -->
+                    <div class="system-requirements-container">
+                        <div class="section-header">
+                            <h2>System Requirements</h2>
+                        </div>
+                        <div id="system-requirements-content" class="system-requirements-content">
+                            <!-- Will be populated via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Lightbox for Screenshots -->
+        <div id="lightbox" class="lightbox">
+            <span class="close-lightbox" id="close-lightbox">&times;</span>
+            <img id="lightbox-image" src="" alt="Screenshot">
+        </div>
+    </div>
+
+    <!-- Steam Lookup Modal -->
+    <div id="steam-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Steam Game Lookup</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="steam-lookup-form">
+                    <div class="input-group">
+                        <label for="steam-app-id">Steam App ID:</label>
+                        <input type="text" id="steam-app-id" placeholder="Enter Steam App ID (e.g., 2215430)">
+                        <button id="fetch-steam-data" class="fetch-button">Fetch Data</button>
+                    </div>
+                    <div id="steam-loading" class="steam-loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Fetching data from Steam...</p>
+                    </div>
+                </div>
+                <div id="json-preview-container" style="display: none;">
+                    <div class="json-actions">
+                        <button id="copy-json" class="copy-button">
+                            <i class="fas fa-copy"></i> Copy to Clipboard
+                        </button>
+                        <button id="create-game-button" class="copy-button" style="margin-left: 10px; background: #66c0f4; color: #1b2838;">
+                            <i class="fas fa-plus"></i> Create Game
+                        </button>
+                    </div>
+                    <pre id="json-preview" class="json-preview"></pre>
+                </div>
+                <div id="download-progress-container" class="download-progress-container" style="display: none;">
+                    <h3>Download Progress</h3>
+                    <div id="download-progress-items"></div>
+                    <div class="progress-bar-container">
+                        <div id="download-progress-bar" class="progress-bar"></div>
+                    </div>
+                    <div id="download-status">Preparing download...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Game Modal -->
+    <div id="edit-game-modal" class="edit-game-modal">
+        <div class="edit-modal-content">
+            <div class="modal-header">
+                <h2>Edit Game</h2>
+                <span class="close-modal" id="close-edit-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="edit-game-form">
+                    <div class="edit-form-group">
+                        <label for="edit-name">Game Name:</label>
+                        <input type="text" id="edit-name" name="name" placeholder="Game name">
+                    </div>
+                    
+                    <div class="edit-form-group">
+                        <label for="edit-short-description">Short Description:</label>
+                        <textarea id="edit-short-description" name="short_description" placeholder="Short description for homepage"></textarea>
+                    </div>
+                    
+                    <div class="edit-form-group">
+                        <label for="edit-description">Full Description (HTML):</label>
+                        <textarea id="edit-description" name="description" placeholder="Full game description with HTML"></textarea>
+                    </div>
+                    
+                    <div class="edit-form-group">
+                        <label for="edit-genre">Genre:</label>
+                        <input type="text" id="edit-genre" name="genre" placeholder="Genre">
+                    </div>
+                    
+                    <div class="edit-form-group">
+                        <label for="edit-players">Players:</label>
+                        <input type="text" id="edit-players" name="players" placeholder="e.g. 1, 2+, etc.">
+                    </div>
+                    
+                    <div class="edit-form-group">
+                        <label for="edit-release-date">Release Date:</label>
+                        <input type="text" id="edit-release-date" name="releaseDate" placeholder="Release date">
+                    </div>
+                    
+                    <div class="edit-form-group">
+                        <label for="edit-studio">Studio/Developer:</label>
+                        <input type="text" id="edit-studio" name="studio" placeholder="Studio or developer">
+                    </div>
+                    
+                    <div class="edit-form-group">
+                        <label for="edit-publisher">Publisher:</label>
+                        <input type="text" id="edit-publisher" name="publisher" placeholder="Publisher">
+                    </div>
+                    
+                    <div class="edit-form-group">
+                        <label for="edit-instructions">Installation Instructions (HTML):</label>
+                        <textarea id="edit-instructions" name="instructions" placeholder="Installation instructions with HTML"></textarea>
+                    </div>
+                    
+                    <button type="submit" id="save-game-button" class="fetch-button" style="width: 100%;">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- File Upload Modal -->
+    <div id="file-upload-modal" class="file-upload-modal">
+        <div class="file-upload-content">
+            <div class="modal-header">
+                <h2>Upload Game Files</h2>
+                <span class="close-modal" id="close-file-upload-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="file-upload-form" class="file-upload-form">
+                    <div class="file-input-container" id="file-drop-area">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Drop files here or click to select files</p>
+                        <input type="file" id="file-input" multiple style="display: none;">
+                    </div>
+                    
+                    <div id="upload-progress-container" style="display: none;">
+                        <div class="progress-bar-container">
+                            <div id="upload-progress-bar" class="progress-bar"></div>
+                        </div>
+                        <div id="upload-status">Uploading files...</div>
+                    </div>
+                    
+                    <button type="submit" class="fetch-button" style="width: 100%;">
+                        <i class="fas fa-upload"></i> Upload Files
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Connect file input to the drop area -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileDropArea = document.getElementById('file-drop-area');
+            const fileInput = document.getElementById('file-input');
+            
+            if (fileDropArea && fileInput) {
+                fileDropArea.addEventListener('click', () => {
+                    fileInput.click();
+                });
+                
+                fileInput.addEventListener('change', () => {
+                    if (fileInput.files.length > 0) {
+                        fileDropArea.innerHTML = `
+                            <i class="fas fa-file-archive"></i>
+                            <p>${fileInput.files.length} file(s) selected</p>
+                            <small>Click to select different files</small>
+                        `;
+                    }
+                });
+                
+                // Prevent default drag behaviors
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    fileDropArea.addEventListener(eventName, preventDefaults, false);
+                    document.body.addEventListener(eventName, preventDefaults, false);
+                });
+                
+                // Highlight drop area when item is dragged over it
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    fileDropArea.addEventListener(eventName, highlight, false);
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    fileDropArea.addEventListener(eventName, unhighlight, false);
+                });
+                
+                // Handle dropped files
+                fileDropArea.addEventListener('drop', handleDrop, false);
+                
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                
+                function highlight() {
+                    fileDropArea.style.backgroundColor = 'rgba(102, 192, 244, 0.2)';
+                    fileDropArea.style.borderColor = '#66c0f4';
+                }
+                
+                function unhighlight() {
+                    fileDropArea.style.backgroundColor = 'transparent';
+                    fileDropArea.style.borderColor = '#66c0f4';
+                }
+                
+                function handleDrop(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    fileInput.files = files;
+                    
+                    if (files.length > 0) {
+                        fileDropArea.innerHTML = `
+                            <i class="fas fa-file-archive"></i>
+                            <p>${files.length} file(s) selected</p>
+                            <small>Click to select different files</small>
+                        `;
+                    }
+                }
+            }
+        });
+    </script>
+    
+    <!-- Main application script -->
+    <script src="app.js"></script>
+</body>
+</html>

@@ -83,7 +83,33 @@ let prefetchDelay; // Timer for delaying prefetch to avoid unnecessary requests
 // Steam store URL template
 const steamStoreUrl = 'https://store.steampowered.com/app/';
 
-// Initialize the app
+function isAdmin() {
+    const url = window.location.href;
+    // Check for @admin anywhere in the URL or as a query parameter
+    return url.includes('@admin') || 
+           url.includes('?admin=') || 
+           url.includes('&admin=');
+}
+// Function to toggle admin UI elements based on admin status
+function toggleAdminUI() {
+    const isAdminUser = isAdmin();
+    
+    // Elements to show/hide based on admin status
+    const adminElements = [
+        document.getElementById('edit-game-button'),
+        document.getElementById('upload-files-button'),
+        document.getElementById('add-game-button')
+    ];
+    
+    // Show/hide elements
+    adminElements.forEach(element => {
+        if (element) {
+            element.style.display = isAdminUser ? 'flex' : 'none';
+        }
+    });
+}
+
+// Update the original init function to call toggleAdminUI
 async function init() {
     try {
         await loadGames();
@@ -107,6 +133,9 @@ async function init() {
         
         // Set up event listeners
         setupEventListeners();
+        
+        // Toggle admin UI elements
+        toggleAdminUI();
     } catch (error) {
         console.error('Failed to initialize app:', error);
         loading.style.display = 'none';
@@ -133,6 +162,7 @@ async function loadGames() {
 
 // Set up event listeners
 function setupEventListeners() {
+
     // Back button
     backButton.addEventListener('click', (e) => {
         e.preventDefault();
@@ -145,6 +175,9 @@ function setupEventListeners() {
         // Show home page, hide game page
         homePage.style.display = 'block';
         gamePage.style.display = 'none';
+        
+        // Toggle admin UI when URL changes
+        toggleAdminUI();
     });
     
     // Lightbox close
@@ -180,6 +213,9 @@ function setupEventListeners() {
             homePage.style.display = 'block';
             gamePage.style.display = 'none';
         }
+        
+        // Update admin UI when URL changes
+        toggleAdminUI();
     });
     
     // Add game button (open Steam modal)
@@ -703,6 +739,9 @@ async function openGamePage(game) {
         const url = new URL(window.location);
         url.searchParams.set('game', game.id);
         window.history.pushState({}, '', url);
+        
+        // Toggle admin UI elements when URL changes
+        toggleAdminUI();
         
         // Scroll to top
         window.scrollTo(0, 0);
